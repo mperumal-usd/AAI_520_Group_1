@@ -1,81 +1,54 @@
-
+# We'll define first a Parser abstract class
 class Parser:
-    def parse(self, response):
-        '''A simple parser that looks for specific keywords in the response.
-        '''
+    def parse(self, response): # This is the placeholder of the default method for this class
+        # Here's the returned value, which will be a dictionary with an Action value, and a list of dynamic parameters.
         return {"action": "FinalAnswer", "parameters": {}}
-    
+# Next, we'll define an XML parser, which inherits from our abstract class Parser.    
 class XmlParser(Parser):
     def parse(self, response):
-        '''A parser that extracts XML tags from the response.
-        For example, it looks for <InvokeTool>{"symbol": "AAPL", "step": "financials"}</InvokeTool>
-        or <FinalAnswer>answer</FinalAnswer>.
-        Returns : a dict with action and parameters. Example:
-        {
-            "action": "InvokeTool",
-            "parameters": {
-                "symbol": "AAPL",
-                "step": "financials"
-            }
-        }
-        '''
+        # A parser that extracts XML tags from the response.
+        # For example, it looks for <InvokeTool>{"symbol": "AAPL", "step": "financials"}</InvokeTool>
+        # or <FinalAnswer>answer</FinalAnswer>.
+        # Returns : a dict with action and parameters. Example:
+        # {
+        #    "action": "InvokeTool",
+        #    "parameters": {
+        #        "symbol": "AAPL",
+        #        "step": "financials"
+        #    }
+        #}
         import re
-        pattern = r'<(\w+)>(.*?)</\1>'
-        matches = re.findall(pattern, response)
-        if matches:
+        pattern = r'<(\w+)>(.*?)</\1>' # Defining the regular expression for XML structure
+        matches = re.findall(pattern, response) # Identifying all matches of XML
+        if matches: # When there are XML matches, we'll separate them and parse their contents
             action, content = matches[0]
             content = content.strip()
             contentJson = {}
             try:
                 import json
-                contentJson = json.loads(content)
+                contentJson = json.loads(content) # Once parsed, we'll reformat them to JSON
             except:
-                contentJson = {"content": content}
+                contentJson = {"content": content} # If the content is not valid, we'll return the error message with the invalid content text
                 return {"action": action, "parameters": contentJson, "error": "Content is not valid JSON"}
-            return {"action": action, "parameters": contentJson}
-        return {"action": "FinalAnswer", "parameters": {}}
-    
+            return {"action": action, "parameters": contentJson} # If it was valid, we return the parsed content in JSON format
+        return {"action": "FinalAnswer", "parameters": {}} #If there wasn't any XML to begin with, we just return an empty list of parameters
+    # Next, we have a specialized parsing for our agent's functionality that will interpret the actions in XML tags and encode them as a list of dictionaries
     def  parse_all(self, response):
-        '''Parse all XML tags in the response and return a list of dicts.
-<NeedApproval>The user wants to know the current price for "AAPL".</NeedApproval>
-<Thought>The user is asking for the current price of "AAPL". The "Yahoo Finance Stock Quote" tool can provide this information. I will call this tool with the symbol "AAPL".</Thought>
-<InvokeTool>{"name": "Yahoo Finance Stock Quote", "api": "{ \"symbol\": \"AAPL\"}"}</InvokeTool>
-        Response : [
-        {
-            "action": "NeedApproval",
-            "parameters": {
-                "content": "The user wants to know the current price for \"AAPL\"."
-            }
-        },
-        {
-            "action": "Thought",
-            "parameters": {
-                "content": "The user is asking for the current price of \"AAPL\". The \"Yahoo Finance Stock Quote\" tool can provide this information. I will call this tool with the symbol \"AAPL\"."
-            }
-        },
-        {
-            "action": "InvokeTool",
-            "parameters": {
-                "name": "Yahoo Finance Stock Quote",
-                "api": "{ \"symbol\": \"AAPL\"}"
-        }
-        ]
-        '''
         import re
-        pattern = r'<(\w+)>(.*?)</\1>'
-        matches = re.findall(pattern, response)
-        results = []
-        for action, content in matches:
-            content = content.strip()
+        pattern = r'<(\w+)>(.*?)</\1>' # Defining the regular expression for XML structure
+        matches = re.findall(pattern, response) # Identifying all matches of XML
+        results = [] # Preparing an empty array for the results
+        for action, content in matches: # For each detected action (if any),
+            content = content.strip()   # we'll parse its contents
             contentJson = {}
-            try:
+            try: # Then, we'll try to convert it to JSON format
                 import json
                 contentJson = json.loads(content)
-            except:
+            except: # Should any errors occur, we'll return the error message as part of the response
                 contentJson = {"content": content}
                 results.append({"action": action, "parameters": contentJson, "error": "Content is not valid JSON"})
                 continue
-            results.append({"action": action, "parameters": contentJson})
+            results.append({"action": action, "parameters": contentJson}) # If everything's fine, we'll return the parsed JSON content
         if not results:
-            results.append({"action": "FinalAnswer", "parameters": {}})
+            results.append({"action": "FinalAnswer", "parameters": {}}) # If there were no actions, we'll return an empty dictionary
         return results  
