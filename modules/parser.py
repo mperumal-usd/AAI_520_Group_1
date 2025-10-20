@@ -33,7 +33,7 @@ class XmlParser(Parser):
             return {"action": action, "parameters": contentJson} # If it was valid, we return the parsed content in JSON format
         return {"action": "FinalAnswer", "parameters": {}} #If there wasn't any XML to begin with, we just return an empty list of parameters
     # Next, we have a specialized parsing for our agent's functionality that will interpret the actions in XML tags and encode them as a list of dictionaries
-    def  parse_all(self, response):
+    def parse_all(self, response):
         import re
         pattern = r'<(\w+)>(.*?)</\1>' # Defining the regular expression for XML structure
         matches = re.findall(pattern, response) # Identifying all matches of XML
@@ -52,3 +52,15 @@ class XmlParser(Parser):
         if not results:
             results.append({"action": "FinalAnswer", "parameters": {}}) # If there were no actions, we'll return an empty dictionary
         return results  
+    
+    def parseTags(self, response):
+        '''Agent response parser to extract all TAGS.
+            Returns a dictionary with tag names as keys and tag values as values.
+        '''
+        import re
+        pattern = r'<(\w+)>(.*?)</\1>'
+        matches = re.findall(pattern, response)
+        result = {}
+        for tag, value in matches:
+                result[tag.lower()] = value.strip() 
+        return result
